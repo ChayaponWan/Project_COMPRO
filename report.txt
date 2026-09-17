@@ -1,0 +1,40 @@
+Grocery Stock System - Summary Report
+Generated At : 2026-09-17 09:59:30
+App Version  : 1.0
+Endianness   : Little-Endian
+Encoding     : UTF-8 (fixed-length)
+
+------------------------------------------------------------------------------------------
+ID    Barcode         Name                    CatID  Unit    Cost     Sell     Qty    Status  
+------------------------------------------------------------------------------------------
+1001  12345          นม                       1      2       20.00    25.00    5      Active  
+1002  123            ขนม                      4      30      40.00    45.00    20     Active  
+1003  1234           น้ำ                       5      40      100.00   105.00   35     Active  
+1004  22222          ขนมปัง                    6      44      34.00    36.00    20     Active  
+1005  4444444444     น้ำอัดลม                   4      77      50.00    60.00    20     Active  
+1006  1111111111     ลูกอม                     4      60      40.00    50.00    20     Active  
+1007  666666666      ข้าว                       5      70      50.00    65.00    20     Active  
+------------------------------------------------------------------------------------------
+
+Summary (Products)
+- Total Products (records) : 7
+- Active Products          : 7
+- Deleted Products         : 0
+- Total Stock Quantity     : 140
+- Low Stock (<=5) count    : 1
+- Average Sell Price       : 55.14
+
+Categories
+- Total Categories : 6
+  [1] WAnpon (Deleted) - 1 product(s)
+  [2] Wan_02 (Deleted) - 0 product(s)
+  [3] w (Active) - 0 product(s)
+  [4] ee (Active) - 3 product(s)
+  [5] Q (Active) - 2 product(s)
+  [6] E (Active) - 1 product(s)
+
+Stock-In Records
+- Total Stock-In Entries : 0
+
+Recent Activity Log (this session)
+  (no actions this session)
