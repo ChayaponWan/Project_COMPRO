@@ -1,0 +1,107 @@
+﻿================================================================================
+  GROCERY STOCK SYSTEM - STRUCTURE
+  ระบบสต็อกสินค้าร้านขายของชำ (grocery_stock.py v1.0)
+================================================================================
+
+1. PROJECT FILES
+--------------------------------------------------------------------------------
+  project/
+  |-- grocery_stock.py        โปรแกรมหลัก (เมนู CRUD + รายงาน)
+  |-- gen.py                  สร้างข้อมูลทดสอบ
+  |-- product.dat             [Binary] ข้อมูลสินค้า
+  |-- category.dat            [Binary] ข้อมูลหมวดหมู่
+  |-- stockin.dat             [Binary] รายการนำเข้าคลัง
+  |-- report.txt              [Text]   รายงานรวม + Activity Log
+  |-- report_product.txt      [Text]   รายงานสินค้า
+  |-- report_category.txt     [Text]   รายงานหมวดหมู่
+  |-- report_stockin.txt      [Text]   รายงานนำเข้าคลัง
+  `-- structure.txt           เอกสารนี้
+
+2. BINARY RECORD STRUCTURES
+--------------------------------------------------------------------------------
+  - Fixed-length records, Little-Endian ('<'), ไม่มี padding
+  - สตริงเข้ารหัส UTF-8 เติม \x00 ให้ครบขนาด (ภาษาไทย 1 ตัวอักษร = 3 bytes)
+  - status: 1 = Active, 0 = Deleted (soft delete: ไม่ลบ record จริง)
+  - ตำแหน่ง record ที่ n อยู่ที่ byte offset = n * record size
+
+2.1 product.dat
+  Format : '<i15s50si10sffii'  |  Record size = 99 bytes
+
+  #  Field         Type     Size  Offset   Description
+  ------------------------------------------------------------------------
+  1  product_id    int32       4       0   รหัสสินค้า (เริ่ม 1001, auto-increment)
+  2  barcode       str[15]    15       4   บาร์โค้ด
+  3  name          str[50]    50      19   ชื่อสินค้า (~16 ตัวอักษรไทย)
+  4  category_id   int32       4      69   อ้างอิง category.dat
+  5  unit          str[10]    10      73   หน่วยนับ
+  6  cost_price    float32     4      83   ราคาทุนต่อหน่วย
+  7  sell_price    float32     4      87   ราคาขาย
+  8  stock_qty     int32       4      91   จำนวนคงเหลือ
+  9  status        int32       4      95   1=Active, 0=Deleted
+
+2.2 category.dat
+  Format : '<i30s50si'  |  Record size = 88 bytes
+
+  #  Field         Type     Size  Offset   Description
+  ------------------------------------------------------------------------
+  1  category_id   int32       4       0   รหัสหมวดหมู่ (เริ่ม 1, auto-increment)
+  2  category_name str[30]    30       4   ชื่อหมวดหมู่
+  3  description   str[50]    50      34   คำอธิบาย
+  4  status        int32       4      84   1=Active, 0=Deleted
+
+2.3 stockin.dat
+  Format : '<iiiff30si'  |  Record size = 54 bytes
+
+  #  Field         Type     Size  Offset   Description
+  ------------------------------------------------------------------------
+  1  import_id     int32       4       0   รหัสนำเข้า (เริ่ม 5001, auto-increment)
+  2  product_id    int32       4       4   อ้างอิง product.dat
+  3  quantity      int32       4       8   จำนวนที่นำเข้า
+  4  cost_price    float32     4      12   ราคาทุนต่อหน่วย ณ ตอนนำเข้า
+  5  total_cost    float32     4      16   quantity x cost_price
+  6  supplier      str[30]    30      20   ผู้จำหน่าย
+  7  import_date   int32       4      50   Unix timestamp (วินาที)
+  * stockin.dat ไม่มี field status (ไม่รองรับการแก้ไข/ลบ)
+
+3. RELATIONSHIPS
+--------------------------------------------------------------------------------
+  category.dat (category_id) 1 ----< N product.dat (category_id)
+  product.dat  (product_id)  1 ----< N stockin.dat (product_id)
+
+  เมื่อบันทึก Stock-In: product.stock_qty += quantity และ product.cost_price = ราคาทุนใหม่
+
+4. PROGRAM STRUCTURE (grocery_stock.py)
+--------------------------------------------------------------------------------
+  Section 1  File/Record specs      : *_FILE, *_FMT, *_SIZE, *_FIELDS
+  Section 2  Low-level helpers      : str_to_bytes, bytes_to_str, now_ts, fmt_ts
+  Section 3  class Table            : _pack/_unpack, read_at, write_at, append,
+                                      all_records, find_index_by_id, next_id, soft_delete
+  Section 4  Table instances        : product_table, category_table, stockin_table, action_log
+  Section 5  Input validation       : input_int, input_float, input_str
+  Section 6  Category CRUD          : category_add / view_all / update / delete / pick_active
+  Section 7  Product CRUD           : product_add / view_one / view_all / view_filtered /
+                                      view_summary / update / delete
+  Section 8  Stock-In               : stockin_add / view_all / view_by_product
+  Section 9  Reports (.txt)         : popup_report, _section_product/_category/_stockin,
+                                      report_product, report_category, report_stockin,
+                                      generate_report, report_all_files, report_menu
+  Section 10 Main menu              : add/update/delete/view menus, safe_exit, main
+
+5. MENU STRUCTURE
+--------------------------------------------------------------------------------
+  Main Menu
+  |-- 1) Add      -> Product / Category / Stock-In
+  |-- 2) Update   -> Product / Category
+  |-- 3) Delete   -> Product / Category (soft delete)
+  |-- 4) View     -> Product (one/all/filter/summary) / Category / Stock-In (all/by product)
+  |-- 5) Report   -> 1 Product | 2 Category | 3 Stock-In | 4 รวม | 5 ทุกไฟล์
+  `-- 0) Exit     -> สร้างรายงานทุกไฟล์ + เด้ง 3 ไฟล์แยก แล้วปิดโปรแกรม
+
+6. REPORT OUTPUT
+--------------------------------------------------------------------------------
+  report_product.txt   [เด้ง]  ตารางสินค้า + สรุป + Low Stock
+  report_category.txt  [เด้ง]  ตารางหมวดหมู่ + จำนวนสินค้าต่อหมวด
+  report_stockin.txt   [เด้ง]  ตารางนำเข้า + ยอดรวม
+  report.txt           [ไม่เด้งตอนเลือกข้อ 5/ออกโปรแกรม] รวมทั้ง 3 ส่วน + Activity Log
+  * ไฟล์เขียนด้วย UTF-8 with BOM เพื่อให้ Notepad แสดงภาษาไทยถูกต้อง
+
